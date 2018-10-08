@@ -8,9 +8,8 @@
 #include <iostream>
 #include <cstdint>
 #include <cmath>
-
-// safe division
-#define SDIV(x,y)(((x)+(y)-1)/(y))
+#include <limits>
+#include "cuda_runtime.h"
 
 #define TIMERSTART(label)                                                  \
     cudaEvent_t start##label, stop##label;                                 \
