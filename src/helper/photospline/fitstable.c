@@ -514,6 +514,7 @@ parsefitstable(fitsfile *fits, struct splinetable *table)
 		table->knots[i] = knot_scratch + table->order[i];
 		fits_read_pix(fits, TDOUBLE, &fpix, table->nknots[i], NULL,
 		    table->knots[i], NULL, &error);
+        // free(knot_scratch);
 	}
 	if (error != 0) {
 		splinetable_free(table);

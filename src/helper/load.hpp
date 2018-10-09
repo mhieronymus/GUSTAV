@@ -31,18 +31,14 @@
 //     value_t type, const char *key, void *result);
 
 bool load_splines(
-    value_t * spline_cffs,
-    index_t n_cffs,
-    value_t * spline_knts,
-    index_t * n_knts,
-    index_t * spline_dgrs,
-    index_t n_dgrs,
-    index_t n_dims,
+    splinetable *& tablestruct_,
     char * filename)
 {
     index_t errorvalue_;
-
-	splinetable * tablestruct_ = new splinetable();
+    if(DEBUG) {
+        std::cout << "Loading from " << filename << "\n";
+    }
+	// splinetable * tablestruct_ = new splinetable();
 
     geo_type geometry_;
     int geotype_;
@@ -86,34 +82,47 @@ bool load_splines(
 		}
 		parity_type parity_ = (parity_type)par;
 
-        spline_cffs     = tablestruct_->coefficients; 
-        n_cffs          = 0;
-        for(index_t i=0; i<tablestruct_->ndim; ++i) 
-            n_cffs += tablestruct_->order[i]+1;
-        // n_cffs          = tablestruct_->ndim * (tablestruct_->order+2);
-        n_knts          = (index_t*) tablestruct_->nknots;
-        index_t n_total_knts = 0;
-        for(index_t i=0; i<tablestruct_->ndim; ++i) 
-            n_total_knts += n_knts[i];
-        // Flatten the array
-        spline_knts = new value_t[n_total_knts];
-        index_t offset = 0;
-        for(index_t i=0; i<tablestruct_->ndim; ++i) 
-        {
-            for(index_t j=0; j<n_knts[i]; ++j)
-            {
-                spline_knts[j + offset] = tablestruct_->knots[i][j];
-            }
-            offset += n_knts[i];
-        }
-        // spline_knts     = tablestruct_->knots;
+        // spline_cffs     = tablestruct_->coefficients; 
+        // n_cffs          = 0;
+        // for(index_t i=0; i<tablestruct_->ndim; ++i) 
+        //     n_cffs += tablestruct_->order[i]+1;
+        // // n_cffs          = tablestruct_->ndim * (tablestruct_->order+2);
+        // n_knts          = (index_t*) tablestruct_->nknots;
+        // index_t n_total_knts = 0;
+        // for(index_t i=0; i<tablestruct_->ndim; ++i) 
+        //     n_total_knts += n_knts[i];
+        // // Flatten the array
+        // spline_knts = new value_t[n_total_knts];
+        // index_t offset = 0;
+        // for(index_t i=0; i<tablestruct_->ndim; ++i) 
+        // {
+        //     for(index_t j=0; j<n_knts[i]; ++j)
+        //     {
+        //         // Invalid read of size 8
+        //         // Address 0x66e7c28 is 0 bytes after a block of size 216 alloc'd
+        //         // Allocated in readsplinefitstable() fitstable.c:512
+        //         spline_knts[j + offset] = tablestruct_->knots[i][j];
+        //         // std::cout << tablestruct_->knots[i][j] << ", ";
+        //     }
+        //     offset += n_knts[i];
+        // }
+        // // spline_knts     = tablestruct_->knots;
         
-        spline_dgrs     = tablestruct_->order;
-        n_dgrs          = tablestruct_->ndim;
-        n_dims          = tablestruct_->ndim;
+        // spline_dgrs     = tablestruct_->order;
+        // n_dgrs          = tablestruct_->ndim;
+        // n_dims          = tablestruct_->ndim;
+        // n_splines       = new index_t[n_dims];
+        // for(index_t i=0; i<n_dims; ++i)
+        // {
+        //     n_splines[i] = n_knts[i]-spline_dgrs[i]-2;
+
+        // }
+        std::cout << "Loading successful\n";
 		return true;
 	} else {
-		delete[] tablestruct_; 
+        if(DEBUG) {
+            std::cout << "Loading failed\n";
+        }
 		return false;
 	}
 }

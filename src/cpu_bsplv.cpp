@@ -71,72 +71,69 @@ value_t bsplvb_2(
 
 // Create n_evals times a random array of size n_dims and evaluate the spline
 void cpu_eval_splines(
-    value_t * spline_cffs, 
-    index_t n_cffs, 
-    value_t * spline_knts, 
-    index_t * n_knts, 
-    index_t * spline_dgrs,
-    index_t n_dgrs, 
-    index_t n_evals,
-    index_t n_dims,
-    index_t * splines_per_dim) 
+    splinetable * table,
+    index_t n_evals) 
 {
 
     std::mt19937 engine(42);
     std::uniform_real_distribution<value_t> normal_dist(0, 1);
 
-    // Store the range of each dimension given by the difference of its first
-    // and last knot over all splines in that dimension
-    // Also store the lower bounds
-    value_t * range = new value_t[n_dims];
-    value_t * lwr_bnds = new value_t[n_dims];
-    index_t knots_offset = 0;
-    index_t dgrs_offset = 0;
-    index_t * last_knot_idx = new index_t[n_dims];
-    for(index_t d=0; d<n_dims; d++) 
-    {   
-        index_t curr_last_knot_idx = 0;
-        for(index_t i=0; i<splines_per_dim[d]; i++) 
-            curr_last_knot_idx += spline_dgrs[i + dgrs_offset] + 2;
+    // // Store the range of each dimension given by the difference of its first
+    // // and last knot over all splines in that dimension
+    // // Also store the lower bounds
+    // value_t * range = new value_t[n_dims];
+    // value_t * lwr_bnds = new value_t[n_dims];
+    // index_t knots_offset = 0;
+    // index_t dgrs_offset = 0;
+    // index_t * last_knot_idx = new index_t[n_dims];
+    // for(index_t d=0; d<n_dims; d++) 
+    // {   
+    //     index_t curr_last_knot_idx = 0;
+    //     for(index_t i=0; i<splines_per_dim[d]; i++) 
+    //         curr_last_knot_idx += spline_dgrs[i + dgrs_offset] + 2;
 
-        range[d] =  spline_knts[knots_offset + curr_last_knot_idx] 
-                  - spline_knts[knots_offset];
-        lwr_bnds[d] = spline_knts[knots_offset];
-        knots_offset += curr_last_knot_idx;
-        dgrs_offset += splines_per_dim[d];
-        last_knot_idx[d] = curr_last_knot_idx;
-    }
-
+    //     range[d] =  spline_knts[knots_offset + curr_last_knot_idx] 
+    //               - spline_knts[knots_offset];
+    //     lwr_bnds[d] = spline_knts[knots_offset];
+    //     knots_offset += curr_last_knot_idx;
+    //     dgrs_offset += splines_per_dim[d];
+    //     last_knot_idx[d] = curr_last_knot_idx;
+    // }
+    value_t * range = new value_t[table->ndim];
+    for(index_t d=0; d<table->ndim; d++) 
+        range[d] = table->knots[d][table->nknots[d]-1] 
+                   - table->knots[d][0];
     for(index_t i=0; i<n_evals; ++i) 
     {
+        
         // Get a random parameter within the splines 
-        value_t * par = new value_t[n_dims];
-        for(index_t d=0; d<n_dims; d++) 
-            par[d] = range[d] * normal_dist(engine) + lwr_bnds[d];
+        value_t * par = new value_t[table->ndim];
+        for(index_t d=0; d<table->ndim; d++) 
+            par[d] = range[d] * normal_dist(engine) + table->knots[d][0];
          
         value_t y = 0;
-        knots_offset = 0;
-        dgrs_offset = 0;
         // For every dimension
-        for(index_t d=0; d<n_dims; d++) 
+        for(index_t d=0; d<table->ndim; d++) 
         {   
-            index_t n_knts = last_knot_idx[d];
             // For every spline s that has support in par...
-            // If we assume knots of equal distance for simplicity, we could
-            // simply the search for the starting t_i aka left index. 
-            // Or we do a binary search starting at a knot that might be near.
+            // We do a binary search starting at a knot that might be near.
             // It is exact if the grid has equal distances everywhere.
-            index_t left = SDIV( par[d] - lwr_bnds[d], 
-                                 range[d]/last_knot_idx[d] );
-            find_left_knot(&(spline_knts[knots_offset]), n_knts, left, par[d]);
+            index_t left = SDIV( par[d] - table->knots[d][0], 
+                                 range[d]/table->knots[d][table->nknots[d]-1]);
+            find_left_knot(
+                table->knots[d], 
+                table->nknots[d], 
+                left, 
+                par[d]);
             
-            value_t * biatx = new value_t[spline_dgrs[dgrs_offset]+1];
-            y += bsplvb_2(&(spline_knts[knots_offset]), 
-                        spline_dgrs[dgrs_offset]+1, spline_dgrs[dgrs_offset],
-                        par[d], left, biatx);
-
-            knots_offset = last_knot_idx[d];
-            dgrs_offset += splines_per_dim[d];
+            value_t * biatx = new value_t[table->order[d]+1];
+            y += bsplvb_2(
+                table->knots[d], 
+                table->order[d], 
+                table->order[d], 
+                par[d], 
+                left, 
+                biatx);
         }
         // store y or something
     }

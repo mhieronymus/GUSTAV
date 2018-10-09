@@ -1,0 +1,1 @@
+rm build/* -r && make release && cd build/apps && ./GUSTAV /home/mhierony/Documents/Uni/Masterthesis/data/splines/LowEnergyMieCascades-ShorterStack-560.abs.fits

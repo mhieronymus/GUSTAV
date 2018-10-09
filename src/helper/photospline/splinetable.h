@@ -8,25 +8,6 @@
 extern "C" {
 #endif
 
-struct splinetable {
-	index_t ndim;
-	index_t *order;
-
-	value_t **knots;
-	long *nknots;
-
-	value_t **extents;
-
-	value_t *periods;
-
-	value_t *coefficients;
-	long *naxes;
-	unsigned long *strides;
-
-	index_t naux;
-	char ***aux;
-};
-
 struct splinetable_buffer {
 	void *data;
 	size_t size;
