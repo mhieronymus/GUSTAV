@@ -1,0 +1,1 @@
+rm build/* -r && make debug && cd build/apps && valgrind --leak-check=full ./GUSTAV /home/mhierony/Documents/Uni/Masterthesis/data/splines/LowEnergyMieCascades-ShorterStack-560.abs.fits

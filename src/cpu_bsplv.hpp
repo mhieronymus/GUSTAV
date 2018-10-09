@@ -4,6 +4,9 @@
 #include <random>
 #include "helper/types.hpp"
 
+// For reference 
+#include "helper/photospline/bspline.h"
+
 void cpu_eval_splines(splinetable * table, index_t n_evals);
 
 #endif

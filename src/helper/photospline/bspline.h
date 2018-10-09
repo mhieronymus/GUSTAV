@@ -34,7 +34,7 @@ value_t bspline_deriv(const value_t *knots, value_t x, index_t i, index_t n, uns
  */
 
 void bsplvb_simple(const value_t *knots, const unsigned nknots,
-    value_t x, index_t left, index_t jhigh, value_t *restrict biatx);
+    value_t x, index_t left, index_t jhigh, value_t * biatx);
 void bsplvb(const value_t *knots, const value_t x, const index_t left, const index_t jlow,
     const index_t jhigh, value_t *biatx,
     value_t *delta_l, value_t *delta_r);

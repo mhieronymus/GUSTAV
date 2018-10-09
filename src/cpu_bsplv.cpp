@@ -1,5 +1,6 @@
 #include "cpu_bsplv.hpp"
 
+#include <iostream>
 // Binary search to find the leftmost spline with support.
 // Uses left as first guess
 void find_left_knot(
@@ -8,14 +9,18 @@ void find_left_knot(
     index_t & left,
     value_t x) 
 {
+    if(left == n_knts) {left--; return;}
+    if(left == n_knts-1) return;
     if(knots[left] < x && knots[left+1] > x) return;
+    index_t high = n_knts;
     do 
     {
         if(knots[left] > x) {
+            high = left;
             left = left >> 1;
         } else 
         {
-            left = left + (left << 1);
+            left += (high - left) >> 1;
         }
     } while(knots[left] > x || knots[left+1] < x);
 }
@@ -42,29 +47,34 @@ value_t bsplvb_2(
     index_t jmax = 20)
 {
     index_t j = 0;
-    if(index != 1) {
+    if(index != 1) { 
         j = 0;
         biatx[j] = 1;
         // Check if no more columns need to be evaluated.
         if(j >= jhigh) return biatx[j];
     }
+    value_t * delta_r = new value_t[jmax];
+    value_t * delta_l = new value_t[jmax];
     do 
     {
         index_t jp1 = j+1;
-        value_t * delta_r = new value_t[jmax];
-        delta_r[j] = knots[left + j] - x;
-        value_t * delta_l = new value_t[jmax];
-        delta_l[j] = x - knots[left+1-j];
+        
+        delta_r[j] = knots[left + j + 1] - x;
+        delta_l[j] = x - knots[left-j];
         value_t saved = 0;
         for(index_t i=0; i<j; ++i) 
         {
-            value_t term = biatx[i] / (delta_r[i] + delta_l[jp1-i]);
+            value_t term = biatx[i] / (delta_r[i] + delta_l[jp1-i-1]);
             biatx[i] = saved + delta_r[i] * term;
-            saved = delta_l[jp1-i] * term;
+            saved = delta_l[jp1-i-1] * term;
         }
         biatx[jp1] = saved;
         j = jp1;
+        
+
     } while(j < jhigh);
+    delete[] delta_r;
+    delete[] delta_l;
     return biatx[j];
 }
 
@@ -112,14 +122,20 @@ void cpu_eval_splines(
             par[d] = range[d] * normal_dist(engine) + table->knots[d][0];
          
         value_t y = 0;
+        value_t y2 = 0;
+        value_t y3 = 0;
         // For every dimension
         for(index_t d=0; d<table->ndim; d++) 
         {   
             // For every spline s that has support in par...
             // We do a binary search starting at a knot that might be near.
             // It is exact if the grid has equal distances everywhere.
-            index_t left = SDIV( par[d] - table->knots[d][0], 
-                                 range[d]/table->knots[d][table->nknots[d]-1]);
+            // std::cout << "Using par[d] = " << par[d] << "\n";
+            // std::cout << table->knots[d][table->nknots[d]-1] << " - " << table->knots[d][0] << " = " << range[d] << "\n";
+            index_t left = SDIV( 
+                (par[d] - table->knots[d][0])*table->nknots[d], 
+                range[d]);
+            
             find_left_knot(
                 table->knots[d], 
                 table->nknots[d], 
@@ -127,16 +143,57 @@ void cpu_eval_splines(
                 par[d]);
             
             value_t * biatx = new value_t[table->order[d]+1];
-            y += bsplvb_2(
+    
+            y = bsplvb_2(
                 table->knots[d], 
                 table->order[d], 
                 table->order[d], 
                 par[d], 
                 left, 
                 biatx);
+            // std::cout << "\nbiatx\n";
+            // for(index_t k=0; k<table->order[d]+1; ++k)
+            //     std::cout << biatx[k] << ", ";
+            // std::cout << "\n";
+            value_t * biatx2 = new value_t[table->order[d]+1]; // max degree?
+            // index_t maxdegree = maxorder(table->order, table->ndim)+1;
+            // basically just to get the max degree of all dims
+            bsplvb_simple(
+                table->knots[d],    // double* knots
+                table->nknots[d],   // unsigned nknots
+                par[d],             // double x
+                left,               // int left, centers[n]
+                table->order[d]+1,  // int degree
+                biatx2);            // float* biatx
+            y2 = biatx2[table->order[d]];
+
+            value_t * biatx3 = new value_t[table->order[d]+1];
+            value_t * delta_l = new value_t[20];
+            value_t * delta_r = new value_t[20];
+            bsplvb(
+                table->knots[d],
+                par[d],
+                left,
+                table->order[d], 
+                table->order[d],
+                biatx3,
+                delta_l,
+                delta_r);
+            y3 = biatx3[table->order[d]];
+            if(DEBUG)
+                std::cout << y << " vs " << y2 << " vs " << y3 << ", ";
+            delete[] biatx;
+            delete[] biatx2;
+            delete[] biatx3;
+            delete[] delta_l;
+            delete[] delta_r;
         }
+        delete[] par;
         // store y or something
+        if(DEBUG)
+            std::cout << "\n";
     }
+    delete[] range;
 }
 
 /// From IceCube

@@ -5,7 +5,7 @@
 #include "cpu_bsplv.hpp"
 #include "gpu_bsplv.h"
 
-const bool DEBUG = false;
+const bool DEBUG = true;
 
 int main(int argc, char* argv[]) {
     
@@ -17,6 +17,7 @@ int main(int argc, char* argv[]) {
     // index_t n_cffs, n_dgrs, n_dims;
     splinetable * tablestruct_ = new splinetable();
     index_t n_evals = 1 << 10;       // Number of times to evaluate the splines
+    n_evals = 4;
     if(argc > 1) {
         char* filename = argv[1];
         std::cout << "loading from " << filename << "\n";
@@ -110,6 +111,8 @@ int main(int argc, char* argv[]) {
         //                 spline_dgrs, n_dgrs, 
         //                 n_evals, n_dims);
         TIMERSTOP(gpu_overall)
+    } else {
+        cpu_eval_splines(tablestruct_, n_evals);
     }
 
     
