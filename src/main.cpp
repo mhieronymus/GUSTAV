@@ -5,7 +5,7 @@
 #include "cpu_bsplv.hpp"
 #include "gpu_bsplv.h"
 
-const bool DEBUG = true;
+const bool DEBUG = false;
 
 int main(int argc, char* argv[]) {
     

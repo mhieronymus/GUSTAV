@@ -25,6 +25,71 @@ void find_left_knot(
     } while(knots[left] > x || knots[left+1] < x);
 }
 
+/*
+ * Evaluate the result of a full spline basis given a set of knots, a position,
+ * an order and the leftmost spline for the position (or -1) that has support.
+ */ 
+value_t ndsplineeval_core_2(
+    splinetable * table, 
+    index_t * centers, 
+    index_t maxdegree, 
+    value_t * biatx) 
+{
+    value_t result = 0;
+    value_t basis_tree[table->ndim];
+    index_t decomposed_pos[table->ndim];
+
+    index_t tablepos = 0;
+    basis_tree[0] = 1;
+    index_t nchunks = 1;
+    
+    for(index_t i=0; i<table->ndim; ++i)
+    {
+        decomposed_pos[i] = 0;
+        tablepos += (centers[i]-table->order[i]) * table->strides[i];
+        basis_tree[i+1] = basis_tree[i] * biatx[i*(maxdegree+1)];
+    }
+    for(index_t i=0; i<table->ndim - 1; ++i)
+        nchunks *= (table->order[i] + 1);
+    index_t n = 0;
+    while(true)
+    {
+        // We can expect this to be true most of the time, I guess?
+        // I can test that against the normal approach later
+        // for(index_t i=0; __builtin_expect(i < table->order[table->ndim-1]+1, 
+            // 1); ++i)
+        for(index_t i=0; i<table->order[table->ndim-1]+1; ++i)
+        {
+            value_t tmp = basis_tree[table->ndim-1] ;
+            tmp = biatx[(table->ndim-1)*(maxdegree+1) + i] ;
+            tmp = table->coefficients[tablepos+i]; // invalid read
+            result += basis_tree[table->ndim-1] 
+                * biatx[(table->ndim-1)*(maxdegree+1) + i] 
+                * table->coefficients[tablepos+i];
+        }
+        // if(__builtin_expect(++n == nchunks, false)) break;
+        if(++n == nchunks) break;
+
+        tablepos += table->strides[table->ndim-2];
+        decomposed_pos[table->ndim-2]++;
+
+        // Now to higher dimensions 
+        index_t i;
+        for(i=table->ndim-2; decomposed_pos[i]>table->order[i]; --i)
+        {
+            decomposed_pos[i-1]++;
+            tablepos += (table->strides[i-1]
+                - decomposed_pos[i]*table->strides[i]);
+            decomposed_pos[i] = 0;
+        }
+        // for(index_t j=i; __builtin_expect(j < table->ndim-1, 1); ++j)
+        for(index_t j=i; j < table->ndim-1; ++j)
+            basis_tree[j+1] = basis_tree[j] 
+                * biatx[j*(maxdegree+1) + decomposed_pos[j]];
+    }
+    return result;
+}
+
 // See "A Practical Guide to Splines (revisited)" by Carl de Boor ()
 // Chapter X, page 112f
 /* See "A Practical Guide to Splines (revisited)" by Carl de Boor ()
@@ -37,24 +102,34 @@ void find_left_knot(
  *        left   = index with knots[left] <= x <= knots[left+1]
  *        biatx  = help array that stores the evaluations
  */
-value_t bsplvb_2(
+void bsplvb_2(
     value_t * knots,
     index_t jhigh,
     index_t index,
     value_t x,
     index_t left,
     value_t * biatx,
+    index_t nknots,
     index_t jmax = 20)
 {
     index_t j = 0;
-    if(index != 1) { 
-        j = 0;
+    // In case if x is outside of the full support of the spline surface.
+    if(left == jhigh) 
+    {
+        while(left >= 0 && x < knots[left]) left--;
+    } else if(left == nknots-jhigh-2) 
+    {
+        while (left < nknots-1 && x > knots[left+1]) left++;	
+    }
+
+    if(index != 2) { 
         biatx[j] = 1;
         // Check if no more columns need to be evaluated.
-        if(j >= jhigh) return biatx[j];
+        if(j >= jhigh) return;
     }
-    value_t * delta_r = new value_t[jmax];
-    value_t * delta_l = new value_t[jmax];
+   
+    value_t delta_r[jhigh];
+    value_t delta_l[jhigh];
     do 
     {
         index_t jp1 = j+1;
@@ -62,20 +137,54 @@ value_t bsplvb_2(
         delta_r[j] = knots[left + j + 1] - x;
         delta_l[j] = x - knots[left-j];
         value_t saved = 0;
-        for(index_t i=0; i<j; ++i) 
+        for(index_t i=0; i<=j; ++i) 
         {
-            value_t term = biatx[i] / (delta_r[i] + delta_l[jp1-i-1]);
+            value_t term = biatx[i] / (delta_r[i] + delta_l[j-i]);
             biatx[i] = saved + delta_r[i] * term;
-            saved = delta_l[jp1-i-1] * term;
+            saved = delta_l[j-i] * term;
         }
-        biatx[jp1] = saved;
-        j = jp1;
+        biatx[j+1] = saved;
+        j++;
         
+    } while(j < jhigh); // shouldn't that be sufficient?
 
-    } while(j < jhigh);
-    delete[] delta_r;
-    delete[] delta_l;
-    return biatx[j];
+    /* 
+	 * If left < (spline order), only the first (left+1)
+	 * splines are valid; the remainder are utter nonsense.
+     * TODO: Check why
+	 */
+    index_t i = jhigh-left;
+    if (i > 0) {
+        for (j = 0; j < left+1; j++)
+			biatx[j] = biatx[j+i]; /* Move valid splines over. */
+		for ( ; j <= jhigh; j++)
+			biatx[j] = 0.0; /* The rest are zero by construction. */
+    }
+    i = left+jhigh+2-nknots;
+    if (i > 0) {
+        for (j = jhigh; j > i-1; j--)
+			biatx[j] = biatx[j-i];
+		for ( ; j >= 0; j--)
+			biatx[j] = 0.0;
+    }
+}
+
+value_t wiki_bsplines(
+    value_t * knots, value_t x, index_t left, index_t order)
+{
+    if(order == 0)
+    {
+        if(knots[left] <= x && x < knots[left+1]) return 1;
+        return 0;
+    }
+    value_t result = (x-knots[left])  
+        * wiki_bsplines(knots, x, left, order-1)
+        / (knots[left+order] - knots[left]);
+    result += (knots[left+order+1] - x) 
+        * wiki_bsplines(knots, x, left+1, order-1)
+        / (knots[left+order+1] - knots[left+1]);
+    return result;
+
 }
 
 
@@ -88,112 +197,140 @@ void cpu_eval_splines(
     std::mt19937 engine(42);
     std::uniform_real_distribution<value_t> normal_dist(0, 1);
 
-    // // Store the range of each dimension given by the difference of its first
-    // // and last knot over all splines in that dimension
-    // // Also store the lower bounds
-    // value_t * range = new value_t[n_dims];
-    // value_t * lwr_bnds = new value_t[n_dims];
-    // index_t knots_offset = 0;
-    // index_t dgrs_offset = 0;
-    // index_t * last_knot_idx = new index_t[n_dims];
-    // for(index_t d=0; d<n_dims; d++) 
-    // {   
-    //     index_t curr_last_knot_idx = 0;
-    //     for(index_t i=0; i<splines_per_dim[d]; i++) 
-    //         curr_last_knot_idx += spline_dgrs[i + dgrs_offset] + 2;
-
-    //     range[d] =  spline_knts[knots_offset + curr_last_knot_idx] 
-    //               - spline_knts[knots_offset];
-    //     lwr_bnds[d] = spline_knts[knots_offset];
-    //     knots_offset += curr_last_knot_idx;
-    //     dgrs_offset += splines_per_dim[d];
-    //     last_knot_idx[d] = curr_last_knot_idx;
-    // }
-    value_t * range = new value_t[table->ndim];
+    value_t range[table->ndim];
+    index_t maxdegree = 0;
     for(index_t d=0; d<table->ndim; d++) 
+    {
         range[d] = table->knots[d][table->nknots[d]-1] 
                    - table->knots[d][0];
+        maxdegree = maxdegree > table->order[d] ? maxdegree : table->order[d];
+    }
+
     for(index_t i=0; i<n_evals; ++i) 
     {
-        
+        value_t biatx[table->ndim*(maxdegree+1)];
+        value_t biatx2[table->ndim*(maxdegree+1)];
+
+        // index_t lefties[table->ndim];
+        index_t centers[table->ndim];
         // Get a random parameter within the splines 
-        value_t * par = new value_t[table->ndim];
+        value_t par[table->ndim];
+       
+        // for(index_t d=0; d<table->ndim; d++) 
+        // {
+        //     value_t exact;
+        //     do {
+        //         par[d] = range[d] * normal_dist(engine) + table->knots[d][0];
+        //         index_t left = SDIV( 
+        //         (par[d] - table->knots[d][0])*table->nknots[d], 
+        //         range[d]);
+            
+        //         find_left_knot(
+        //             table->knots[d], 
+        //             table->nknots[d], 
+        //             left, 
+        //             par[d]);
+        //         centers[d] = left;
+
+        //         exact = (table->knots[d], par[d], centers[d],
+        //             table->order[d] );
+        //     }while(exact < 0.25);
+        //     if(!DEBUG)
+        //         std::cout << "\n" << par[d] << "\n" << std::flush;
+
+        // }
+        // That's the way IceCube does that. But why search for tablecenters?
         for(index_t d=0; d<table->ndim; d++) 
+        {   
             par[d] = range[d] * normal_dist(engine) + table->knots[d][0];
+
+            // index_t left = SDIV( 
+            //     (par[d] - table->knots[d][0])*table->nknots[d], 
+            //     range[d]);
+            
+            //     find_left_knot(
+            //         table->knots[d], 
+            //         table->nknots[d], 
+            //         left, 
+            //         par[d]);
+            //     centers[d] = left;
+        }
+        // We actually search for table centers. Who knows, why
+        tablesearchcenters(table, par, centers);
          
-        value_t y = 0;
-        value_t y2 = 0;
-        value_t y3 = 0;
         // For every dimension
         for(index_t d=0; d<table->ndim; d++) 
         {   
-            // For every spline s that has support in par...
-            // We do a binary search starting at a knot that might be near.
-            // It is exact if the grid has equal distances everywhere.
-            // std::cout << "Using par[d] = " << par[d] << "\n";
-            // std::cout << table->knots[d][table->nknots[d]-1] << " - " << table->knots[d][0] << " = " << range[d] << "\n";
-            index_t left = SDIV( 
-                (par[d] - table->knots[d][0])*table->nknots[d], 
-                range[d]);
+            // par[d] = range[d] * normal_dist(engine) + table->knots[d][0];
+            // // For every spline s that has support in par...
+            // // We do a binary search starting at a knot that might be near.
+            // // It is exact if the grid has equal distances everywhere.
+            // // std::cout << "Using par[d] = " << par[d] << "\n";
+            // // std::cout << table->knots[d][table->nknots[d]-1] << " - " << table->knots[d][0] << " = " << range[d] << "\n";
+            // index_t left = SDIV( 
+            //     (par[d] - table->knots[d][0])*table->nknots[d], 
+            //     range[d]);
             
-            find_left_knot(
-                table->knots[d], 
-                table->nknots[d], 
-                left, 
-                par[d]);
-            
-            value_t * biatx = new value_t[table->order[d]+1];
-    
-            y = bsplvb_2(
+            // find_left_knot(
+            //     table->knots[d], 
+            //     table->nknots[d], 
+            //     left, 
+            //     par[d]);
+            // lefties[d] = left;
+
+            // Get the values
+            bsplvb_2(
                 table->knots[d], 
                 table->order[d], 
-                table->order[d], 
+                1, 
                 par[d], 
-                left, 
-                biatx);
-            // std::cout << "\nbiatx\n";
-            // for(index_t k=0; k<table->order[d]+1; ++k)
-            //     std::cout << biatx[k] << ", ";
-            // std::cout << "\n";
-            value_t * biatx2 = new value_t[table->order[d]+1]; // max degree?
+                centers[d], 
+                &(biatx[d*(maxdegree+1)]),
+                table->nknots[d] );
+       
             // index_t maxdegree = maxorder(table->order, table->ndim)+1;
             // basically just to get the max degree of all dims
             bsplvb_simple(
                 table->knots[d],    // double* knots
                 table->nknots[d],   // unsigned nknots
                 par[d],             // double x
-                left,               // int left, centers[n]
+                centers[d],               // int left, centers[n]
                 table->order[d]+1,  // int degree
-                biatx2);            // float* biatx
-            y2 = biatx2[table->order[d]];
-
-            value_t * biatx3 = new value_t[table->order[d]+1];
-            value_t * delta_l = new value_t[20];
-            value_t * delta_r = new value_t[20];
-            bsplvb(
-                table->knots[d],
-                par[d],
-                left,
-                table->order[d], 
-                table->order[d],
-                biatx3,
-                delta_l,
-                delta_r);
-            y3 = biatx3[table->order[d]];
-            if(DEBUG)
-                std::cout << y << " vs " << y2 << " vs " << y3 << ", ";
-            delete[] biatx;
-            delete[] biatx2;
-            delete[] biatx3;
-            delete[] delta_l;
-            delete[] delta_r;
+                &(biatx2[d*(maxdegree+1)]) );            // float* biatx
+           
         }
-        delete[] par;
         // store y or something
-        if(DEBUG)
-            std::cout << "\n";
+        value_t y = ndsplineeval_core_2(table, centers, maxdegree, biatx);
+        value_t y2 = ndsplineeval_core_2(table, centers, maxdegree, biatx2);
+        // value_t y = -1;
+        // value_t y2 = -1;
+        // value_t y3 = -1;
+
+        value_t y1 = ndsplineeval(table, par, centers, 0);
+
+        if(!DEBUG) {
+
+        
+            std::cout << "\nbiatx:\n";
+            for(index_t d=0; d<table->ndim; ++d)
+            {
+                std::cout << "Exact ";
+                value_t exact = wiki_bsplines(table->knots[d], par[d], centers[d],
+                    table->order[d] );
+                std::cout << exact << "\n";
+                for(index_t j=0; j<maxdegree + 1; ++j) 
+                {
+                    std::cout << "("  << biatx[d*(maxdegree+1)+j]
+                            << ", " << biatx2[d*(maxdegree+1)+j] << "), ";
+                }
+                std::cout << "\n";
+            }
+            std::cout << "(my_value, using bsplvb, using ndsplineeval)\n";
+            
+            std::cout << "(" << y << ", " << y2 << ", " << y1 << ")\n";
+        }
+        
     }
-    delete[] range;
 }
 
 /// From IceCube

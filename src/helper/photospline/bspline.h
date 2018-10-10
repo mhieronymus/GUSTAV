@@ -70,6 +70,7 @@ value_t ndsplineeval(const struct splinetable *table, const value_t *x,
 // value_t ndsplineeval_linalg(const struct splinetable *table, const value_t *x, 
 //     const index_t *centers, index_t derivatives);
 
+
 // slicing function to get 1-d slice with certain normalizaton properties
 void
 ndsplineeval_slice_coeffs(const struct splinetable *table, const value_t *x, const index_t *centers, value_t *results,index_t slice_dimension, index_t derivative, index_t area_norm);

@@ -12,7 +12,6 @@
 
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
-
 #include "bspline.h"
 
 /*
@@ -80,13 +79,14 @@ bsplvb_simple(const value_t *knots, const unsigned nknots,
 	 * Handle the (rare) cases where x is outside the full
 	 * support of the spline surface.
 	 */
-	if (left == degree-1)
+	if (left == degree-1) {
 		while (left >= 0 && x < knots[left])
 			left--;
-	else if (left == nknots-degree-1)
+    }
+	else if (left == nknots-degree-1) {
 		while (left < nknots-1 && x > knots[left+1])
 			left++;	
-	
+    }
 	/* 
 	 * NB: if left < degree-1 or left > nknots-degree-1,
 	 * the following loop will dereference addresses ouside
