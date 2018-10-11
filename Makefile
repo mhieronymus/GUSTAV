@@ -1,5 +1,5 @@
 CXX = nvcc 
-CXXFLAGS = -std=c++11 -arch=sm_50 -D_FORCE_INLINES
+CXXFLAGS = -std=c++11 -arch=sm_50 -D_FORCE_INLINES -D_MWAITXINTRIN_H_INCLUDED
 
 BUILD = build
 OBJ_DIR = $(BUILD)/objects 
@@ -9,6 +9,7 @@ INCLUDE = -L/usr/include/ -lcfitsio
 SRC = \
 	$(wildcard src/*.cpp) \
 	$(wildcard src/*.cu) \
+	$(wildcard src/helper/*cpp) \
 	$(wildcard src/helper/photospline/*.c) \
 
 OBJECTS = $(SRC:%.*=$(OBJ_DIR)/%.o)

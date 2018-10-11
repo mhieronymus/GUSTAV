@@ -4,128 +4,16 @@
  * SetupTable
  * 
  */ 
+#include <iostream>
 #include "types.hpp"
 #include "photospline/geo_type.h"
 #include "photospline/splinetable.h"
-// struct splinetable {
-// 	index_t ndim;
-// 	index_t *order;
-
-// 	value_t **knots;
-// 	index_t *nknots;
-
-// 	value_t **extents;
-
-// 	value_t *periods;
-
-// 	value_t *coefficients;
-// 	index_t *naxes;
-// 	index_t *strides;
-
-// 	index_t naux;
-// 	char ***aux;
-// };
 
 // int readsplinefitstable(const char *path, struct splinetable *table);
 // int splinetable_read_key(const struct splinetable *table, 
 //     value_t type, const char *key, void *result);
 
-bool load_splines(
-    splinetable *& tablestruct_,
-    char * filename)
-{
-    index_t errorvalue_;
-    if(DEBUG) {
-        std::cout << "Loading from " << filename << "\n";
-    }
-	// splinetable * tablestruct_ = new splinetable();
-
-    geo_type geometry_;
-    int geotype_;
-
-	if (readsplinefitstable(filename, &*tablestruct_) == 0) {
-		long geo, geotype, par, err;
-		double nGroupTable;
-
-		err = splinetable_read_key(tablestruct_, SPLINETABLE_index_t,
-		    "GEOMETRY", &geo);
-		if (err)
-			geo = CYLINDRICAL;
-		geometry_ = (geo_type)geo;
-
-		err = splinetable_read_key(tablestruct_, SPLINETABLE_index_t,
-		    "GEOTYPE", &geotype);
-		if (err) {
-			geotype = 0;
-		}
-		geotype_ = geotype;
-
-		err = splinetable_read_key(tablestruct_,
-		    SPLINETABLE_value_t, "NGROUP", &nGroupTable);
-        // See I3PhotonicsServiceCommons.h
-        value_t nGroup = 1.35634;
-		if (err || nGroupTable == -1) {
-			nGroupTable = nGroup;
-		}
-		value_t nGroupTable_ = nGroupTable;
-
-		err = splinetable_read_key(tablestruct_, SPLINETABLE_index_t,
-		    "PARITY", &par);
-		if (err) {
-			// The first L1 tables were made with positive source
-			// angles, but the first level2 tables should have
-			// EVEN parity
-			if (geotype_ == 0)
-				par = ODD;
-			else
-				par = EVEN;
-		}
-		parity_type parity_ = (parity_type)par;
-
-        // spline_cffs     = tablestruct_->coefficients; 
-        // n_cffs          = 0;
-        // for(index_t i=0; i<tablestruct_->ndim; ++i) 
-        //     n_cffs += tablestruct_->order[i]+1;
-        // // n_cffs          = tablestruct_->ndim * (tablestruct_->order+2);
-        // n_knts          = (index_t*) tablestruct_->nknots;
-        // index_t n_total_knts = 0;
-        // for(index_t i=0; i<tablestruct_->ndim; ++i) 
-        //     n_total_knts += n_knts[i];
-        // // Flatten the array
-        // spline_knts = new value_t[n_total_knts];
-        // index_t offset = 0;
-        // for(index_t i=0; i<tablestruct_->ndim; ++i) 
-        // {
-        //     for(index_t j=0; j<n_knts[i]; ++j)
-        //     {
-        //         // Invalid read of size 8
-        //         // Address 0x66e7c28 is 0 bytes after a block of size 216 alloc'd
-        //         // Allocated in readsplinefitstable() fitstable.c:512
-        //         spline_knts[j + offset] = tablestruct_->knots[i][j];
-        //         // std::cout << tablestruct_->knots[i][j] << ", ";
-        //     }
-        //     offset += n_knts[i];
-        // }
-        // // spline_knts     = tablestruct_->knots;
-        
-        // spline_dgrs     = tablestruct_->order;
-        // n_dgrs          = tablestruct_->ndim;
-        // n_dims          = tablestruct_->ndim;
-        // n_splines       = new index_t[n_dims];
-        // for(index_t i=0; i<n_dims; ++i)
-        // {
-        //     n_splines[i] = n_knts[i]-spline_dgrs[i]-2;
-
-        // }
-        std::cout << "Loading successful\n";
-		return true;
-	} else {
-        if(DEBUG) {
-            std::cout << "Loading failed\n";
-        }
-		return false;
-	}
-}
+bool load_splines(splinetable *& tablestruct_, char * filename);
 
 #endif 
 
