@@ -8,12 +8,10 @@ const bool DEBUG = false;
 
 int main(int argc, char* argv[]) {
     
-    splinetable * table = new splinetable();
     index_t n_evals = 1 << 23;       // Number of times to evaluate the splines
     n_evals = 1 << 10;
     value_t * y_array = new value_t[n_evals];
     CPU_BSPLV * cpu = nullptr;
-
     if(argc > 1) {
         char* filename = argv[1];
         cpu = new CPU_BSPLV(filename);
@@ -22,10 +20,12 @@ int main(int argc, char* argv[]) {
         std::cout << "such as\n";
         std::cout << "/home/mhierony/Documents/Uni/Masterthesis/data/splines/LowEnergyMieCascades-ShorterStack-560.abs.fits\n";
         std::cout << "falling back to default\n";
-
         cpu = new CPU_BSPLV("/home/mhierony/Documents/Uni/Masterthesis/data/splines/LowEnergyMieCascades-ShorterStack-560.abs.fits");
     }
-    if(false)
+
+    splinetable * table = cpu->table;
+    
+    if(true)
     {
         std::cout << "Some information about the loaded splines\n";
         std::cout << "Number of dimensions " << table->ndim << "\n";
@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
         std::cout << "\nnaxes\n";
         for(index_t i=0; i<table->ndim; ++i)
             std::cout << table->naxes[i] << ", ";
-        std::cout << "\nFinished with those prints\n";
+        std::cout << "\nFinished with those prints\n\n\n" << std::flush;
     }
 
     start("cpu_vanilla");
@@ -101,6 +101,8 @@ int main(int argc, char* argv[]) {
     start("H2D");
     GPU_BSPLV * gpu = new GPU_BSPLV(table);
     stop();
+
+    gpu->print_table(table->ndim);
     // TIMERSTART(gpu_overall)
     // gpu_eval_splines(spline_cffs, n_cffs, 
     //                 spline_knts, n_knts, 

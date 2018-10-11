@@ -342,6 +342,8 @@ void CPU_BSPLV::cpu_eval_splines_simple(
 void CPU_BSPLV::load_table(
     char * filename)
 {
+    if(table != nullptr)
+        free_table();
     table = new splinetable();
     std::cout << "loading from " << filename << "\n";
     start("load_from_file");
