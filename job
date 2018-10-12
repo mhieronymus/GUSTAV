@@ -1,0 +1,17 @@
+#!/bin/bash
+#SBATCH -J GUSTAV           
+#SBATCH -o out/GUSTAV.\%j.out   
+#SBATCH -p infogpu                  # Queue name
+#SBATCH -n 1                        # Total number of tasks (=cores if CPU is used)
+#SBATCH --gres=gpu:1                # Total number of GPUs requested (4 GPUs/node)
+#SBATCH --mem=4096MB                # The amount of RAM requested
+#SBATCH -t 00:10:00                 # Run time (hh_mm_ss) - 5 minutes
+#SBATCH -x, --exclude=g0007,g0008,g0009,g0010
+
+#SBATCH -A pararch                  # Specify allocation to charge against
+# Next we load all modules we need. Loading these in the script ensures a consistent environment.
+module load compiler/GCC/5.4.0
+module load system/CUDA/8.0.61
+
+make release
+srun build/apps/GUSTAV

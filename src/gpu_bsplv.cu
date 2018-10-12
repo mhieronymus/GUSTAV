@@ -29,7 +29,7 @@ void print_table_d(
         {
            printf("Total knots here: %d\n", Table->nknots[i]);
             for(index_t j=0; j<Table->nknots[i]; ++j) {
-                printf("%d, ", Table->knots[offset + j]);
+                printf("%f, ", Table->knots[offset + j]);
             }
             printf("\n");
             offset += Table->nknots[i];
@@ -86,12 +86,13 @@ void print_table_d(
     cudaMemcpy(Order, 
         table->order, table->ndim*sizeof(table->order[0]), H2D);        CUERR
     cudaMemcpy(Nknots, 
-        table->nknots, n_coeffs*sizeof(table->nknots[0]), H2D);         CUERR
+        table->nknots, table->ndim*sizeof(table->nknots[0]), H2D);      CUERR
+    // TODO: This: Something doesn't work out here
     total_nknots = 0;
     for(index_t i=0; i<table->ndim; ++i) 
     {
-        cudaMemcpy(&(Knots[total_nknots]), table->knots[i], 
-            table->nknots[i]*sizeof(table->knots[0]), H2D);             CUERR
+        cudaMemcpy(Knots+total_nknots, table->knots[i], 
+            table->nknots[i]*sizeof(table->knots[0][0]), H2D);             CUERR
         total_nknots += table->nknots[i];
     }
     cudaMemcpy(Coefficients, table->coefficients, 
@@ -105,15 +106,15 @@ void print_table_d(
     cudaMemcpy(&(Table->order), 
         &Order, sizeof(Table->order), H2D);                             CUERR
     cudaMemcpy(&(Table->nknots), 
-        &Nknots, sizeof(Table->order), H2D);                            CUERR
+        &Nknots, sizeof(Table->nknots), H2D);                           CUERR
     cudaMemcpy(&(Table->knots), 
-        &Knots, sizeof(Table->order), H2D);                             CUERR
+        &Knots, sizeof(Table->knots), H2D);                             CUERR
     cudaMemcpy(&(Table->coefficients), 
-        &Coefficients, sizeof(Table->order), H2D);                      CUERR
+        &Coefficients, sizeof(Table->coefficients), H2D);               CUERR
     cudaMemcpy(&(Table->naxes), 
-        &Naxes, sizeof(Table->order), H2D);                             CUERR
+        &Naxes, sizeof(Table->naxes), H2D);                             CUERR
     cudaMemcpy(&(Table->strides), 
-        &Strides, sizeof(Table->order), H2D);                           CUERR
+        &Strides, sizeof(Table->strides), H2D);                         CUERR
 }
 
 /*

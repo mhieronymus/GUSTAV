@@ -5,7 +5,7 @@ BUILD = build
 OBJ_DIR = $(BUILD)/objects 
 APP_DIR = $(BUILD)/apps
 TARGET = GUSTAV 
-INCLUDE = -L/usr/include/ -lcfitsio
+INCLUDE = -L/usr/include/ -L/gpfs/fs1/home/mhierony/lib/cfitsio/install/lib -lcfitsio -L/gpfs/fs1/home/mhierony/lib/install/lib -lcurl
 SRC = \
 	$(wildcard src/*.cpp) \
 	$(wildcard src/*.cu) \
@@ -15,10 +15,6 @@ SRC = \
 OBJECTS = $(SRC:%.*=$(OBJ_DIR)/%.o)
 
 all: build $(APP_DIR)/$(TARGET)
-
-$(OBJ_DIR)/%.o: %.*
-	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) $(INCLUDE) -o $@ 
 
 $(APP_DIR)/$(TARGET): $(OBJECTS)
 	@mkdir -p $(@D)

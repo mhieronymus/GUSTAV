@@ -18,9 +18,9 @@ int main(int argc, char* argv[]) {
     } else {
         std::cout << "Please enter a path to a fits file with photosplines ";
         std::cout << "such as\n";
-        std::cout << "/home/mhierony/Documents/Uni/Masterthesis/data/splines/LowEnergyMieCascades-ShorterStack-560.abs.fits\n";
+        std::cout << "/gpfs/fs1/home/mhierony/data/splines/LowEnergyMieCascades-ShorterStack-560.abs.fits\n";
         std::cout << "falling back to default\n";
-        cpu = new CPU_BSPLV("/home/mhierony/Documents/Uni/Masterthesis/data/splines/LowEnergyMieCascades-ShorterStack-560.abs.fits");
+        cpu = new CPU_BSPLV("/gpfs/fs1/home/mhierony/data/splines/LowEnergyMieCascades-ShorterStack-560.abs.fits");
     }
 
     splinetable * table = cpu->table;
