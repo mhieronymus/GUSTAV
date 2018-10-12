@@ -63,15 +63,11 @@ value_t CPU_BSPLV::ndsplineeval_core_2(
     index_t n = 0;
     while(true)
     {
-        // We can expect this to be true most of the time, I guess?
-        // I can test that against the normal approach later
+        // I did not see any improvements by using __builtin_expect
         for (index_t i = 0; __builtin_expect(i < table->order[table->ndim-1] +
 		    1, 1); i++)
         // for(index_t i=0; i<table->order[table->ndim-1]+1; ++i)
         {
-            value_t tmp = basis_tree[table->ndim-1] ;
-            tmp = biatx[(table->ndim-1)*(maxdegree+1) + i] ;
-            tmp = table->coefficients[tablepos+i]; // invalid read
             result += basis_tree[table->ndim-1] 
                 * biatx[(table->ndim-1)*(maxdegree+1) + i] 
                 * table->coefficients[tablepos+i];
@@ -139,9 +135,7 @@ void CPU_BSPLV::bsplvb_2(
     value_t delta_r[jhigh];
     value_t delta_l[jhigh];
     do 
-    {
-        index_t jp1 = j+1;
-        
+    {        
         delta_r[j] = knots[left + j + 1] - x;
         delta_l[j] = x - knots[left-j];
         value_t saved = 0;

@@ -3,7 +3,9 @@
 #include <curand.h>
 #include <curand_kernel.h>
 
-bool verbose = true; // Print the amount of allocated memory
+// TODO: Move caches and delta_l and delta_r to shared memory
+
+bool verbose = false; // Print the amount of allocated memory
 
 // Here are device functions. The class is further below.
 __global__
@@ -69,19 +71,103 @@ void tablesearchcenters_device(
     index_t * centers,
     index_t ndim)
 {
+    index_t offset = 0;
+    for(index_t i=0; i<ndim; ++i)
+    {
+        // Check if outside of the table
+        // Should (!) not happen and needs to be handled by giving an error
+        if(par[i] <= Table->knots[offset] ||
+           par[i] > Table->knots[offset + Table->nknots[i]-1])
+           return;
+        if(par[i] < Table->knots[offset + Table->order[i]])
+        {
+            centers[i] = Table->order[i];
+            offset += Table->nknots[i];
+            continue;
+        } else if(par[i] >= Table->knots[offset + Table->naxes[i]])
+        {
+            centers[i] = Table->naxes[i]-1;
+            offset += Table->nknots[i];
+            continue;
+        }
 
+        index_t min = Table->order[i];
+        index_t max = Table->nknots[i]-2;
+        do 
+        {
+            centers[i] = (max+min)/2;
+            if(par[i] < Table->knots[offset + centers[i]])
+                max = centers[i]-1;
+            else 
+                min = centers[i]+1;
+        } while(par[i] < Table->knots[offset + centers[i]] ||
+            par[i] >= Table->knots[offset + centers[i]+1]);
+        
+        if(centers[i] == Table->naxes[i]) centers[i]--;
+        offset += Table->nknots[i];
+    }
 }
 
+// TODO: Move basis_tree and decomposed_pos to shared memory
 __device__ 
 value_t ndsplineeval_core_device(
+    Splinetable * Table,
     index_t * centers,
     index_t maxdegree,
     value_t * biatx,
     index_t ndim) 
 {
-    return 0;
+    value_t result = 0;
+    value_t basis_tree[7]; // ndim+1
+    index_t decomposed_pos[6]; // ndim
+
+    index_t tablepos = 0;
+    basis_tree[0] = 1;
+    index_t nchunks = 1;
+    
+    for(index_t i=0; i<ndim; ++i)
+    {
+        decomposed_pos[i] = 0;
+        tablepos += (centers[i]-Table->order[i]) * Table->strides[i];
+        basis_tree[i+1] = basis_tree[i] * biatx[i*(maxdegree+1)];
+    }
+    for(index_t i=0; i<ndim - 1; ++i)
+        nchunks *= (Table->order[i] + 1);
+    index_t n = 0;
+    while(true)
+    {
+        for(index_t i=0; i<Table->order[ndim-1]+1; ++i)
+        {
+            result += basis_tree[ndim-1] 
+                * biatx[(ndim-1)*(maxdegree+1) + i] 
+                * Table->coefficients[tablepos+i];
+        }
+        if(++n == nchunks) break;
+
+        tablepos += Table->strides[ndim-2];
+        decomposed_pos[ndim-2]++;
+
+        // Now to higher dimensions 
+        index_t i;
+        for(i=ndim-2; decomposed_pos[i]>Table->order[i]; --i)
+        {
+            decomposed_pos[i-1]++;
+            tablepos += (Table->strides[i-1]
+                - decomposed_pos[i]*Table->strides[i]);
+            decomposed_pos[i] = 0;
+        }
+        // for(index_t j=i; j < table->ndim-1; ++j)
+        for (index_t j = i; j < ndim-1; ++j)
+            basis_tree[j+1] = basis_tree[j] 
+                * biatx[j*(maxdegree+1) + decomposed_pos[j]];
+    }
+    return result;
 }
 
+/*
+ * Evaluate splines but sequentially. There is no parallel execution here.
+ * However, in later implementations one could make use of a warp.
+ */
 __device__ 
 void bsplvb_device(
     value_t * knots,
@@ -92,6 +178,59 @@ void bsplvb_device(
     value_t * biatx,
     index_t nknots)
 {
+    index_t j = 0;
+    // In case if x is outside of the full support of the spline surface.
+    if(left == jhigh) 
+    {
+        while(left >= 0 && x < knots[left]) left--;
+    } else if(left == nknots-jhigh-2) 
+    {
+        while (left < nknots-1 && x > knots[left+1]) left++;	
+    }
+
+    if(index != 2) { 
+        biatx[j] = 1;
+        // Check if no more columns need to be evaluated.
+        if(j >= jhigh) return;
+    }
+    // For simplicity we assume maxdegree to be less than 6
+    value_t delta_r[6];
+    value_t delta_l[6];
+    do 
+    {        
+        delta_r[j] = knots[left + j + 1] - x;
+        delta_l[j] = x - knots[left-j];
+        value_t saved = 0;
+        for(index_t i=0; i<=j; ++i) 
+        {
+            value_t term = biatx[i] / (delta_r[i] + delta_l[j-i]);
+            biatx[i] = saved + delta_r[i] * term;
+            saved = delta_l[j-i] * term;
+        }
+        biatx[j+1] = saved;
+        j++;
+        
+    } while(j < jhigh); // shouldn't that be sufficient?
+
+    /* 
+	 * If left < (spline order), only the first (left+1)
+	 * splines are valid; the remainder are utter nonsense.
+     * TODO: Check why
+	 */
+    index_t i = jhigh-left;
+    if (i > 0) {
+        for (j = 0; j < left+1; j++)
+			biatx[j] = biatx[j+i]; /* Move valid splines over. */
+		for ( ; j <= jhigh; j++)
+			biatx[j] = 0.0; /* The rest are zero by construction. */
+    }
+    i = left+jhigh+2-nknots;
+    if (i > 0) {
+        for (j = jhigh; j > i-1; j--)
+			biatx[j] = biatx[j-i];
+		for ( ; j >= 0; j--)
+			biatx[j] = 0.0;
+    }
 
 }
 
@@ -138,7 +277,8 @@ void eval_splines_device(
                 Table->nknots[d]);
             offset += Table->nknots[d];
         }
-        Y[i] = ndsplineeval_core_device(centers, maxdegree, biatx, ndim);
+        Y[i] = ndsplineeval_core_device(Table, centers, 
+            maxdegree, biatx, ndim);
     }
 }
 

@@ -353,7 +353,7 @@ tablesearchcenters(const struct splinetable *table, const value_t *x, index_t *c
 
 		/*
 		 * B-splines are defined on a half-open index_terval. For the
-		 * last poindex_t of the index_terval, move center one poindex_t to the
+		 * last point of the index_terval, move center one point to the
 		 * left to get the limit of the sum without evaluating
 		 * absent basis functions.
 		 */

@@ -10,7 +10,14 @@ int main(int argc, char* argv[]) {
     
     bool verbose = false;            // Print some data about the splines
     index_t n_evals = 1 << 23;       // Number of times to evaluate the splines
-    n_evals = 1 << 10;
+    // In IceCube there are 3K to 6K llh calls per physics frame
+    // 10 frames are sufficient (source?)
+    // Each llh call needs a full response matrix with 5000 lines
+    // an N_{segments} many columns (It was about 50 I think)
+    // That makes roughly 5K * 64 * 60K spline evaluations
+    // 5 * (1 << 10) * (1 << 6) * 60 * (1 << 10)
+    // = 196,608,000 ~ 1 << 27.5
+    // n_evals = 1 << 12;       
     value_t * y_array = new value_t[n_evals];
     CPU_BSPLV * cpu = nullptr;
     if(argc > 1) {
