@@ -3,6 +3,8 @@
 #include <curand.h>
 #include <curand_kernel.h>
 
+bool verbose = true; // Print the amount of allocated memory
+
 // Here are device functions. The class is further below.
 __global__
 void print_table_d(
@@ -58,71 +60,6 @@ void print_table_d(
         printf("\nFinished with those prints\n");
     }
 
-}
-
-/*
- * Allocate memory on the GPU and move over the splinetable.
- * We ommit stuff such as aux. Hence we don't copy the whole struct but we
- * have to bind the arrays to the struct.
- */
- GPU_BSPLV::GPU_BSPLV(splinetable * table)
-{
-    cudaMalloc(&Table, sizeof(*Table));                                 CUERR
-
-    // Allocate the arrays
-    cudaMalloc(&Order, table->ndim*sizeof(*Order));                     CUERR
-    // Get the total number of knots
-    index_t total_nknots = 0;
-    for(index_t k=0; k<table->ndim; ++k) total_nknots += table->nknots[k];
-    cudaMalloc(&Knots, total_nknots*sizeof(*Knots));                    CUERR
-    cudaMalloc(&Nknots, table->ndim*sizeof(*Nknots));                   CUERR
-    // Extends?
-    // Periods?
-    // Get the total number of coefficients
-    index_t n_coeffs = 0;
-    for(index_t c=0; c<table->ndim; ++c) n_coeffs += table->naxes[c];
-    cudaMalloc(&Coefficients, n_coeffs*sizeof(*Coefficients));          CUERR
-    cudaMalloc(&Naxes, table->ndim*sizeof(*Naxes));                     CUERR
-    cudaMalloc(&Strides, table->ndim*sizeof(*Strides));                 CUERR
-
-    // Copy the data
-    cudaMemcpy(Order, 
-        table->order, table->ndim*sizeof(table->order[0]), H2D);        CUERR
-    cudaMemcpy(Nknots, 
-        table->nknots, table->ndim*sizeof(table->nknots[0]), H2D);      CUERR
-    // TODO: This: Something doesn't work out here
-    total_nknots = 0;
-    for(index_t i=0; i<table->ndim; ++i) 
-    {
-        cudaMemcpy(Knots+total_nknots, table->knots[i], 
-            table->nknots[i]*sizeof(table->knots[0][0]), H2D);             CUERR
-        total_nknots += table->nknots[i];
-    }
-    cudaMemcpy(Coefficients, table->coefficients, 
-        n_coeffs*sizeof(table->coefficients[0]), H2D);                  CUERR
-    cudaMemcpy(Naxes, 
-        table->naxes, table->ndim*sizeof(table->naxes[0]), H2D);        CUERR
-    cudaMemcpy(Strides, 
-        table->strides, table->ndim*sizeof(table->strides[0]), H2D);    CUERR
-
-    // Bind the data
-    cudaMemcpy(&(Table->order), 
-        &Order, sizeof(Table->order), H2D);                             CUERR
-    cudaMemcpy(&(Table->nknots), 
-        &Nknots, sizeof(Table->nknots), H2D);                           CUERR
-    cudaMemcpy(&(Table->knots), 
-        &Knots, sizeof(Table->knots), H2D);                             CUERR
-    cudaMemcpy(&(Table->coefficients), 
-        &Coefficients, sizeof(Table->coefficients), H2D);               CUERR
-    cudaMemcpy(&(Table->naxes), 
-        &Naxes, sizeof(Table->naxes), H2D);                             CUERR
-    cudaMemcpy(&(Table->strides), 
-        &Strides, sizeof(Table->strides), H2D);                         CUERR
-
-    ndim = table->ndim;
-    maxdegree = 0;
-    for(index_t d=0; d<table->ndim; d++) 
-        maxdegree = maxdegree > table->order[d] ? maxdegree : table->order[d];
 }
 
 __device__
@@ -205,6 +142,91 @@ void eval_splines_device(
     }
 }
 
+/*
+ * Allocate memory on the GPU and move over the splinetable.
+ * We ommit stuff such as aux. Hence we don't copy the whole struct but we
+ * have to bind the arrays to the struct.
+ */
+ GPU_BSPLV::GPU_BSPLV(splinetable * table)
+{
+    cudaMalloc(&Table, sizeof(*Table));                                 CUERR
+
+    // Allocate the arrays
+    cudaMalloc(&Order, table->ndim*sizeof(*Order));                     CUERR
+    // Get the total number of knots
+    index_t total_nknots = 0;
+    for(index_t k=0; k<table->ndim; ++k) total_nknots += table->nknots[k];
+    cudaMalloc(&Knots, total_nknots*sizeof(*Knots));                    CUERR
+    cudaMalloc(&Nknots, table->ndim*sizeof(*Nknots));                   CUERR
+    // Extends?
+    // Periods?
+    // Get the total number of coefficients
+    index_t n_coeffs = 0;
+    for(index_t c=0; c<table->ndim; ++c) n_coeffs += table->naxes[c];
+    cudaMalloc(&Coefficients, n_coeffs*sizeof(*Coefficients));          CUERR
+    cudaMalloc(&Naxes, table->ndim*sizeof(*Naxes));                     CUERR
+    cudaMalloc(&Strides, table->ndim*sizeof(*Strides));                 CUERR
+
+    // Copy the data
+    cudaMemcpy(Order, 
+        table->order, table->ndim*sizeof(table->order[0]), H2D);        CUERR
+    cudaMemcpy(Nknots, 
+        table->nknots, table->ndim*sizeof(table->nknots[0]), H2D);      CUERR
+    // TODO: This: Something doesn't work out here
+    total_nknots = 0;
+    for(index_t i=0; i<table->ndim; ++i) 
+    {
+        cudaMemcpy(Knots+total_nknots, table->knots[i], 
+            table->nknots[i]*sizeof(table->knots[0][0]), H2D);             CUERR
+        total_nknots += table->nknots[i];
+    }
+    cudaMemcpy(Coefficients, table->coefficients, 
+        n_coeffs*sizeof(table->coefficients[0]), H2D);                  CUERR
+    cudaMemcpy(Naxes, 
+        table->naxes, table->ndim*sizeof(table->naxes[0]), H2D);        CUERR
+    cudaMemcpy(Strides, 
+        table->strides, table->ndim*sizeof(table->strides[0]), H2D);    CUERR
+
+    // Bind the data
+    cudaMemcpy(&(Table->order), 
+        &Order, sizeof(Table->order), H2D);                             CUERR
+    cudaMemcpy(&(Table->nknots), 
+        &Nknots, sizeof(Table->nknots), H2D);                           CUERR
+    cudaMemcpy(&(Table->knots), 
+        &Knots, sizeof(Table->knots), H2D);                             CUERR
+    cudaMemcpy(&(Table->coefficients), 
+        &Coefficients, sizeof(Table->coefficients), H2D);               CUERR
+    cudaMemcpy(&(Table->naxes), 
+        &Naxes, sizeof(Table->naxes), H2D);                             CUERR
+    cudaMemcpy(&(Table->strides), 
+        &Strides, sizeof(Table->strides), H2D);                         CUERR
+
+    ndim = table->ndim;
+    maxdegree = 0;
+    for(index_t d=0; d<table->ndim; d++) 
+        maxdegree = maxdegree > table->order[d] ? maxdegree : table->order[d];
+
+    if(verbose)
+    {
+        value_t memory = table->ndim*sizeof(*Order) 
+            + total_nknots*sizeof(*Knots)
+            + table->ndim*sizeof(*Nknots)
+            + n_coeffs*sizeof(*Coefficients)
+            + table->ndim*sizeof(*Naxes)
+            + table->ndim*sizeof(*Strides);
+        memory /= (1024*8);
+        std::cout << "\nAllocating " 
+            << memory << " kByte on the GPU for the spline\n";
+        size_t free_mem, total_mem;
+        cudaMemGetInfo(&free_mem, &total_mem);
+        std::cout << "Free Memory: " 
+            << ((value_t) free_mem) / (1024*1024*8) 
+            << " MBytes of " << ((value_t) total_mem) / (1024*1024*8)  << "\n";
+
+    }
+    
+}
+
 GPU_BSPLV::~GPU_BSPLV()
 {
     cudaFree(Order);
@@ -242,6 +264,21 @@ void GPU_BSPLV::eval_splines(
     index_t * Centers_cache = nullptr;
     index_t par_cache = ndim * blocks * threads;
     index_t biatx_cache = blocks * threads * ndim * (maxdegree+1);
+
+    if(verbose)
+    {
+        value_t memory = (par_cache+biatx_cache) * sizeof(value_t)
+            + par_cache * sizeof(index_t);
+        memory /= (1024*1024*8);
+        std::cout << "\nAllocating " << memory << " MBytes for caching\n";
+        value_t memory_2 = (ndim*sizeof(value_t)) / (1024*1024*8);
+        std::cout << "\nAllocating " << memory_2 
+            << " MBytes for the results\n";
+        memory += memory_2 + (ndim*sizeof(value_t))/(1024*1024*8);
+        std::cout << "\nTotal allocated for evaluating: " 
+            << memory << " MBytes \n" << std::flush;
+    }
+
     cudaMalloc(&Cache, (par_cache+biatx_cache) * sizeof(value_t));      CUERR
     cudaMalloc(&Centers_cache, par_cache * sizeof(index_t));            CUERR
 
@@ -249,16 +286,21 @@ void GPU_BSPLV::eval_splines(
     value_t * Range = nullptr, * range = nullptr, * Y = nullptr;
     cudaMallocHost(&range, ndim*sizeof(value_t));                       CUERR 
     cudaMalloc(&Range, ndim*sizeof(value_t));                           CUERR 
-    cudaMalloc(&Y, ndim*sizeof(value_t));                               CUERR
+    cudaMalloc(&Y, n_evals*sizeof(value_t));                            CUERR
     // Some cache that is needed for par, biatx and centers
-
 
     for(index_t d=0; d<table->ndim; d++) 
         range[d] = table->knots[d][table->nknots[d]-1] 
                    - table->knots[d][0];
     cudaMemcpy(Range, range, ndim*sizeof(value_t), H2D);                CUERR 
-
-    
+    if(verbose)
+    {
+        size_t free_mem, total_mem;
+        cudaMemGetInfo(&free_mem, &total_mem);
+        std::cout << "Free Memory: " 
+            << ((value_t) free_mem) / (1024*1024*8) 
+            << " MBytes of " << ((value_t) total_mem) / (1024*1024*8)  << "\n";
+    }
     eval_splines_device<<<blocks, threads>>>(
         Y,                  // The evaluations
         n_evals,            // Length of Y

@@ -1,0 +1,16 @@
+nvcc  -std=c++11 -arch=sm_50 -D_FORCE_INLINES -D_MWAITXINTRIN_H_INCLUDED -O2  -L/usr/include/ -L/gpfs/fs1/home/mhierony/lib/cfitsio/install/lib -lcfitsio -L/gpfs/fs1/home/mhierony/lib/install/lib -lcurl -o build/apps/GUSTAV  src/cpu_bsplv.cpp src/main.cpp src/gpu_bsplv.cu src/helper/timing.cpp src/helper/load.cpp src/helper/photospline/fitstable.c src/helper/photospline/bspline.c 
+src/main.cpp: In function ‘int main(int, char**)’:
+src/main.cpp:24:114: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+         cpu = new CPU_BSPLV("/gpfs/fs1/home/mhierony/data/splines/LowEnergyMieCascades-ShorterStack-560.abs.fits");
+                                                                                                                  ^
+src/gpu_bsplv.cu(214): warning: expression has no effect
+
+src/gpu_bsplv.cu(223): error: expected an expression
+
+src/gpu_bsplv.cu(299): error: expected an expression
+
+2 errors detected in the compilation of "/tmp/tmpxft_00000616_00000000-11_gpu_bsplv.cpp1.ii".
+make: *** [build/apps/GUSTAV] Error 2
+srun: error: g0001: task 0: Exited with exit code 2
+srun: Terminating job step 7586572.0
+slurmstepd: error: execve(): build/apps/GUSTAV: No such file or directory

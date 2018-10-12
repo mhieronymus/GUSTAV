@@ -1,0 +1,33 @@
+Please enter a path to a fits file with photosplines such as
+/gpfs/fs1/home/mhierony/data/splines/LowEnergyMieCascades-ShorterStack-560.abs.fits
+falling back to default
+loading from /gpfs/fs1/home/mhierony/data/splines/LowEnergyMieCascades-ShorterStack-560.abs.fits
+Loading successful
+# elapsed time (load_from_file): 0.0603519s
+# elapsed time (cpu_vanilla): 0.00795969s
+
+Some results
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+
+# elapsed time (cpu): 0.00167889s
+
+Some results
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+
+# elapsed time (cpu_simple): 0.00166587s
+
+Some results
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+
+
+Allocating 0.000326633 MByte on the GPU for the spline
+# elapsed time (H2D): 2.76846s
+
+Allocating 0.0219727 MBytes for caching
+
+Allocating 0 MBytes for the results
+
+Total allocated for evaluating: 0.0219727 MBytes 
+CUDA error: an illegal memory access was encountered : src/gpu_bsplv.cu, line 304
+srun: error: g0001: task 0: Exited with exit code 1
+srun: Terminating job step 7585813.0
