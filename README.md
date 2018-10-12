@@ -5,7 +5,11 @@ Loads a B-Spline from an hdf5-file, transfers it to a GPU and evaluates it on
 random points. Compares the execution time to that on a CPU.
 
 ## TODO
-Test case to see if values are correct
+Test case to see if values are correct (GPU and CPU).
+Store results to a response matrix and evaluate the llh (on a GPU).
+Implement a minimizer that makes use of that 
+(first grid search, later MultiNest. Needs a GPU version of MultiNest or a 
+version that makes use of multiple results).
 
 ## Prerequisites
  - [CUDA](https://developer.nvidia.com/cuda-zone)
@@ -28,3 +32,4 @@ Given a more realistic amount of 2^27 evaluations, we got:
  - GPU version:             9.93812 s
   
 That is a speedup of 4.2 and 17.9 respectively.
+
