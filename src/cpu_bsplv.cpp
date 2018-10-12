@@ -200,7 +200,7 @@ value_t CPU_BSPLV::wiki_bsplines(
 
 
 // Create n_evals times a random array of size n_dims and evaluate the spline
-void CPU_BSPLV::cpu_eval_splines(
+void CPU_BSPLV::eval_splines(
     index_t n_evals,
     value_t * y_array) 
 {
@@ -226,14 +226,14 @@ void CPU_BSPLV::cpu_eval_splines(
         value_t par[table->ndim];
 
         // That's the way IceCube does that. But why search for tablecenters?
-        for(index_t d=0; d<table->ndim; d++) 
+        for(index_t d=0; d<table->ndim; ++d) 
             par[d] = range[d] * normal_dist(engine) + table->knots[d][0];
     
         // We actually search for table centers. Who knows, why
         tablesearchcenters(table, par, centers);
          
         // For every dimension
-        for(index_t d=0; d<table->ndim; d++) 
+        for(index_t d=0; d<table->ndim; ++d) 
         {   
             // Get the values
             bsplvb_2(
@@ -256,7 +256,7 @@ void CPU_BSPLV::cpu_eval_splines(
  * The original IceCube call.
  */ 
 
-void CPU_BSPLV::cpu_eval_splines_vanilla(
+void CPU_BSPLV::eval_splines_vanilla(
     index_t n_evals,
     value_t * y_array) 
 {
@@ -290,7 +290,7 @@ void CPU_BSPLV::cpu_eval_splines_vanilla(
  * Evaluate the splines as in IceCube but use my multi dimensional overall 
  * evaluation.
  */
-void CPU_BSPLV::cpu_eval_splines_simple(
+void CPU_BSPLV::eval_splines_simple(
     index_t n_evals,
     value_t * y_array) 
 {

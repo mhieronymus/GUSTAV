@@ -10,16 +10,18 @@ public:
     GPU_BSPLV(splinetable * table);
     ~GPU_BSPLV();
 
-    void gpu_eval_splines(Splinetable * Table, index_t ndim, index_t n_evals,
-        value_t * y_array);
+    // table is only needed for generating points
+    void eval_splines(splinetable * table, 
+        index_t n_evals, value_t * y_array);
 
-    void print_table(index_t ndim);
+    void print_table();
 private:
-    // Device functions 
+
     Splinetable * Table = nullptr;
     index_t * Order = nullptr;
     value_t * Knots = nullptr, * Coefficients = nullptr;
     long * Nknots = nullptr, * Naxes = nullptr;
     unsigned long * Strides = nullptr;
+    index_t ndim, maxdegree;
 };
 #endif

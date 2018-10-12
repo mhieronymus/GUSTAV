@@ -3,6 +3,8 @@
 
 #include <random>
 #include <iostream>
+
+
 #include "helper/types.hpp"
 #include "helper/timing.hpp"
 #include "helper/load.hpp"
@@ -15,9 +17,9 @@ public:
     CPU_BSPLV(char * filename);
     ~CPU_BSPLV();
 
-    void cpu_eval_splines(index_t n_evals, value_t * y_array);
-    void cpu_eval_splines_vanilla(index_t n_evals, value_t * y_array);
-    void cpu_eval_splines_simple(index_t n_evals, value_t * y_array);
+    void eval_splines(index_t n_evals, value_t * y_array);
+    void eval_splines_vanilla(index_t n_evals, value_t * y_array);
+    void eval_splines_simple(index_t n_evals, value_t * y_array);
     void load_table(char * filename);
     void free_table();
 

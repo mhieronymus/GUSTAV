@@ -8,6 +8,7 @@ const bool DEBUG = false;
 
 int main(int argc, char* argv[]) {
     
+    bool verbose = false;            // Print some data about the splines
     index_t n_evals = 1 << 23;       // Number of times to evaluate the splines
     n_evals = 1 << 10;
     value_t * y_array = new value_t[n_evals];
@@ -25,7 +26,7 @@ int main(int argc, char* argv[]) {
 
     splinetable * table = cpu->table;
     
-    if(true)
+    if(verbose)
     {
         std::cout << "Some information about the loaded splines\n";
         std::cout << "Number of dimensions " << table->ndim << "\n";
@@ -75,7 +76,7 @@ int main(int argc, char* argv[]) {
     }
 
     start("cpu_vanilla");
-    cpu->cpu_eval_splines_vanilla(n_evals, y_array);
+    cpu->eval_splines_vanilla(n_evals, y_array);
     stop();
     std::cout << "\nSome results\n";
     for(index_t i=0; i<100 && i<n_evals; i +=10)
@@ -83,7 +84,7 @@ int main(int argc, char* argv[]) {
     std::cout << "\n\n";
 
     start("cpu");
-    cpu->cpu_eval_splines( n_evals, y_array);
+    cpu->eval_splines(n_evals, y_array);
     stop();
     std::cout << "\nSome results\n";
     for(index_t i=0; i<100 && i<n_evals; i +=10)
@@ -91,7 +92,7 @@ int main(int argc, char* argv[]) {
     std::cout << "\n\n";
 
     start("cpu_simple");
-    cpu->cpu_eval_splines_simple( n_evals, y_array);
+    cpu->eval_splines_simple(n_evals, y_array);
     stop();
     std::cout << "\nSome results\n";
     for(index_t i=0; i<100 && i<n_evals; i +=10)
@@ -101,8 +102,12 @@ int main(int argc, char* argv[]) {
     start("H2D");
     GPU_BSPLV * gpu = new GPU_BSPLV(table);
     stop();
+    if(verbose)
+        gpu->print_table();
 
-    gpu->print_table(table->ndim);
+    start("gpu");
+    gpu->eval_splines(table, n_evals, y_array);
+    stop();
     // TIMERSTART(gpu_overall)
     // gpu_eval_splines(spline_cffs, n_cffs, 
     //                 spline_knts, n_knts, 
