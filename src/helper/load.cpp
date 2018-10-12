@@ -1,4 +1,4 @@
-#include "load.hpp"
+#include "helper/load.hpp"
 
 bool load_splines(
     splinetable *& tablestruct_,

@@ -1,8 +1,8 @@
 #ifndef _BSPLINE_H
 #define _BSPLINE_H
 
-#include "splinetable.h"
-#include "../types.hpp"
+#include "helper/photospline/splinetable.h"
+#include "helper/types.hpp"
 
 #ifdef __cplusplus
 extern "C" {

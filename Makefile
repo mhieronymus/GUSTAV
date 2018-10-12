@@ -5,7 +5,7 @@ BUILD = build
 OBJ_DIR = $(BUILD)/objects 
 APP_DIR = $(BUILD)/apps
 TARGET = GUSTAV 
-INCLUDE = -L/usr/include/ -L/gpfs/fs1/home/mhierony/lib/cfitsio/install/lib -lcfitsio -L/gpfs/fs1/home/mhierony/lib/install/lib -lcurl
+INCLUDE = -Iinclude -L/usr/include/ -L/gpfs/fs1/home/mhierony/lib/cfitsio/install/lib -lcfitsio -L/gpfs/fs1/home/mhierony/lib/install/lib -lcurl
 SRC = \
 	$(wildcard src/*.cpp) \
 	$(wildcard src/*.cu) \

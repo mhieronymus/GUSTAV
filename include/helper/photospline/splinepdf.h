@@ -3,7 +3,7 @@
 
 #include <gsl/gsl_rng.h>
 
-#include "splinetable.h"
+#include "helper/photospline/splinetable.h"
 
 #ifdef __cplusplus
 extern "C" {

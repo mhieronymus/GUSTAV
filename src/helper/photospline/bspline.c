@@ -12,7 +12,7 @@
 
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
-#include "bspline.h"
+#include "helper/photospline/bspline.h"
 
 /*
  * Compute the value of the ith nth-order basis spline of a set

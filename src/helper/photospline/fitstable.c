@@ -22,7 +22,7 @@
 #include <fitsio.h>
 #include <fitsio2.h>
 
-#include "splinetable.h"
+#include "helper/photospline/splinetable.h"
 
 static index_t parsefitstable(fitsfile *fits, struct splinetable *table);
 static index_t fillfitstable(fitsfile *fits, const struct splinetable *table);

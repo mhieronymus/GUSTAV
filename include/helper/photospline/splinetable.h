@@ -2,7 +2,7 @@
 #define _SPLINE_TABLE_H
 
 #include <stdlib.h>
-#include "../types.hpp"
+#include "helper/types.hpp"
 
 #ifdef __cplusplus
 extern "C" {

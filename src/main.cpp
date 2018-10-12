@@ -17,7 +17,8 @@ int main(int argc, char* argv[]) {
     // That makes roughly 5K * 64 * 60K spline evaluations
     // 5 * (1 << 10) * (1 << 6) * 60 * (1 << 10)
     // = 196,608,000 ~ 1 << 27.5
-    // n_evals = 1 << 12;       
+    // n_evals = 1 << 12;   
+    n_evals = 1 << 27;    
     value_t * y_array = new value_t[n_evals];
     CPU_BSPLV * cpu = nullptr;
     if(argc > 1) {
@@ -89,7 +90,7 @@ int main(int argc, char* argv[]) {
     for(index_t i=0; i<100 && i<n_evals; i +=10)
         std::cout << y_array[i] << ", ";
     std::cout << "\n\n";
-
+ if(false) {
     start("cpu");
     cpu->eval_splines(n_evals, y_array);
     stop();
@@ -105,7 +106,7 @@ int main(int argc, char* argv[]) {
     for(index_t i=0; i<100 && i<n_evals; i +=10)
         std::cout << y_array[i] << ", ";
     std::cout << "\n\n";
-    
+ }
     start("H2D");
     GPU_BSPLV * gpu = new GPU_BSPLV(table);
     stop();

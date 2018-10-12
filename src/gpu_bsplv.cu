@@ -458,7 +458,6 @@ void GPU_BSPLV::eval_splines(
         Cache+biatx_cache,  // par cache
         Centers_cache);                                                 CUERR
 
-
     cudaFreeHost(range);                                                CUERR
     cudaFree(Range);                                                    CUERR
     cudaFree(Y);                                                        CUERR

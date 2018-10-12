@@ -6,8 +6,8 @@
  */ 
 #include <iostream>
 #include "types.hpp"
-#include "photospline/geo_type.h"
-#include "photospline/splinetable.h"
+#include "helper/photospline/geo_type.h"
+#include "helper/photospline/splinetable.h"
 
 // int readsplinefitstable(const char *path, struct splinetable *table);
 // int splinetable_read_key(const struct splinetable *table, 
