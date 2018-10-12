@@ -111,7 +111,7 @@ void eval_splines_device(
     curandState state;
     // seed, subsequence to use, offset within the subsequence
     curand_init(42, id, 0, &state);
-    for(index_t i=id; id<n_evals; i+=blockDim.x*gridDim.x)
+    for(index_t i=id; i<n_evals; i+=blockDim.x*gridDim.x)
     {
         value_t * biatx = biatx_cache + id*(ndim*(maxdegree+1));
         value_t * par = par_cache + id*ndim;
@@ -256,7 +256,11 @@ void GPU_BSPLV::eval_splines(
     index_t n_evals,
     value_t * y_array)
 {
-    index_t threads = 1024;
+    // Debug info tells us, we use 160 registers per thread
+    // There are 256 KB of registers per SM in a GTX 1080
+    // That is 256*1024/(8*160) many threads that can run on a SM
+    // That is 204,8 threads
+    index_t threads = 192;
     // There are (ususally) max 64 warps per SM.
     // The GTX 1080 has five SMs per GPC and four GPCs
     index_t blocks = SDIV(n_evals, threads) > 40 ? 40 : SDIV(n_evals, threads);
@@ -277,6 +281,8 @@ void GPU_BSPLV::eval_splines(
         memory += memory_2 + (ndim*sizeof(value_t))/(1024*1024*8);
         std::cout << "\nTotal allocated for evaluating: " 
             << memory << " MBytes \n" << std::flush;
+        std::cout << "Running with " << threads << " threads and " 
+            << blocks << " blocks\n";
     }
 
     cudaMalloc(&Cache, (par_cache+biatx_cache) * sizeof(value_t));      CUERR

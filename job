@@ -13,5 +13,7 @@
 module load compiler/GCC/5.4.0
 module load system/CUDA/8.0.61
 
+nvidia-smi
+rm build/* -R
 make release
 srun build/apps/GUSTAV

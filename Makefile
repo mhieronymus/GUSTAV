@@ -27,7 +27,7 @@ build:
 	@mkdir -p $(APP_DIR)
 	@mkdir -p $(OBJ_DIR)
 
-debug: CXXFLAGS += -g
+debug: CXXFLAGS += -G -lineinfo -Xptxas="-v"
 debug: all
 
 release: CXXFLAGS += -O2 
