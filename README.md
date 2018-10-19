@@ -39,7 +39,7 @@ This is a very naive version which does not do anything in a good way.
 
 Debug info tells us, we use 160 registers per thread.
 There are 256 KB of registers per SM in a GTX 1080
-That is 256*1024/(8*160) = 204,8 many threads that can run on a SM.
+That is 256 x 1024/(8 x 160) = 204,8 many threads that can run on a SM.
 Hence we use 192 threads and 40 blocks -> 7680 threads running in parallel.
 
 Quite some registers are spilled.
