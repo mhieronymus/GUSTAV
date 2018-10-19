@@ -5,18 +5,10 @@ Loads a B-Spline from an hdf5-file, transfers it to a GPU and evaluates it on
 random points. Compares the execution time to that on a CPU.
 
 ## TODO
-Test case to see if values are correct (GPU and CPU).
-Store results to a response matrix and evaluate the llh (on a GPU).
-Implement a minimizer that makes use of that 
-(first grid search, later MultiNest. Needs a GPU version of MultiNest or a 
-version that makes use of multiple results).
-
- - Implement scaleLightYield (0.7% of overall runtime)
- - Implement GetProbabilityQuantiles (8.6% of overall runtime, mainly from Eval that is already implemented for GPU in this package)
- - More functions from SelectSource (that take ~1.7% of overall runtime)
- - Wrap everything above and done so far in MillipedeAddOMSourcePairToMatrix (which takes 1.42% (exclusive) of overall runtime)
- - Add more from GetResponseMatrix (especially deleting the I3FrameObject takes 10% of overall runtime)
- - Add the rest (too much to list here)
+ - Simple minimzer (or scan)
+ - Track length optimization
+ - Newton Method (Cascade energy optimization)
+ - Fit statistics (llh evaluation)
 
 ## Prerequisites
  - [CUDA](https://developer.nvidia.com/cuda-zone)
@@ -39,5 +31,6 @@ Given a more realistic amount of 2^27 evaluations, we got:
  - GPU version:             9.93812 s
   
 That is a speedup of 4.2 and 17.9 respectively. The code for evaluating
-Splines takes about 20.9 % of total runtime in the reconstruction.
+Splines takes about 30.6 % of total runtime in the reconstruction 
+(DRAGON sample and 100 frames).
 
