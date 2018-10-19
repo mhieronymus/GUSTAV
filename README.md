@@ -34,3 +34,12 @@ That is a speedup of 4.2 and 17.9 respectively. The code for evaluating
 Splines takes about 30.6 % of total runtime in the reconstruction 
 (DRAGON sample and 100 frames).
 
+## Notes
+This is a very naive version which does not do anything in a good way.
+
+Debug info tells us, we use 160 registers per thread.
+There are 256 KB of registers per SM in a GTX 1080
+That is 256*1024/(8*160) = 204,8 many threads that can run on a SM.
+Hence we use 192 threads and 40 blocks -> 7680 threads running in parallel.
+
+Quite some registers are spilled.
