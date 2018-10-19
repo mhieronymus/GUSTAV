@@ -312,7 +312,7 @@ void eval_splines_device(
         table->order, table->ndim*sizeof(table->order[0]), H2D);        CUERR
     cudaMemcpy(Nknots, 
         table->nknots, table->ndim*sizeof(table->nknots[0]), H2D);      CUERR
-    // TODO: This: Something doesn't work out here
+
     total_nknots = 0;
     for(index_t i=0; i<table->ndim; ++i) 
     {
